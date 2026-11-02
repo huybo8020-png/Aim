@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head><base href="https://aim-sever.pages.dev/">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aim Web</title>
+<style>
+:root{--bg:#0b0f14;--card:#131a23;--ink:#e6ebf1;--mute:#8d9aab;--line:#2b3644;--pri:#ef5b5b;--priT:#fff;--ok:#4cc38a;--bad:#ef7a72;--warn:#e0b050;--free:#9aa8a0;--pro:#7fa9e6;--vip:#e0b062;color-scheme:dark}
+@media(prefers-color-scheme:light){:root{--bg:#eef1f5;--card:#fff;--ink:#16202c;--mute:#667385;--line:#d9dfe7;--pri:#b32d2d;--priT:#fff;--ok:#1d8a52;--bad:#c4372f;--warn:#b7791f;--free:#6b7a72;--pro:#2f5f9e;--vip:#8a5a12;color-scheme:light}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.wrap{max-width:520px;margin:0 auto;padding:14px}
+h1{font-size:18px;margin:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.banner{border-color:var(--pri);color:var(--pri);font-size:13px;text-align:center;font-weight:600}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;border-radius:8px;cursor:pointer}
+button.p{background:var(--pri);color:var(--priT);border-color:var(--pri);font-weight:600}
+button:disabled{opacity:.45;cursor:not-allowed}
+input[type=text]{font:inherit;width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);margin:8px 0}
+/* Honeypot ẩn */
+.hp-field { position: absolute; left: -9999px; opacity: 0; height: 0; width: 0; z-index: -1; }
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tag{padding:2px 10px;border-radius:99px;border:1px solid currentColor;font-size:12px;font-weight:700}
+.VIP{color:var(--vip)}.PRO{color:var(--pro)}.FREE{color:var(--free)}
+.cd{font-variant-numeric:tabular-nums;font-size:22px;font-weight:700;margin:6px 0 0}
+.mute{color:var(--mute);font-size:13px}.bad{color:var(--bad)}.ok{color:var(--ok)}
+.fn{padding:10px 0;border-top:1px solid var(--line)}
+.fn:first-of-type{border-top:0}
+.fn.lock{opacity:.45}
+.fn .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.fn .name{font-weight:600;flex:1}
+.fn .val{font-variant-numeric:tabular-nums;color:var(--mute);font-size:13px}
+.fn .note{display:block;color:var(--mute);font-size:12px;margin-top:2px}
+.fn .lockmsg{display:none;font-size:12px;color:var(--warn);margin-top:4px}
+.fn.lock .lockmsg{display:block}
+.sw{appearance:none;width:44px;height:24px;border-radius:99px;background:var(--line);position:relative;cursor:pointer;flex:none;border:0}
+.sw:checked{background:var(--ok)}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s}
+.sw:checked::after{left:23px}
+.sw:disabled{cursor:not-allowed}
+select{font:inherit;padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--pri)}
+#go{width:100%;padding:14px;font-size:17px}
+#go.on{background:var(--ok);border-color:var(--ok);color:#fff}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;z-index:99}
+#toast.on{opacity:1}
+.log{background:#0b0f14;border:1px solid var(--line);border-radius:8px;padding:10px;font-family:ui-monospace,Consolas,monospace;font-size:12px;height:110px;overflow-y:auto;color:var(--mute);margin-top:8px}
+.log .ok{color:var(--ok)}.log .bad{color:var(--bad)}.log .warn{color:var(--warn)}
+.log span{display:block;margin-bottom:2px}
+.stats{display:flex;gap:10px;justify-content:space-around;text-align:center;font-size:12px}
+.stats b{display:block;font-size:16px;color:var(--ink)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card banner">🎯 Aim Web — Điều khiển từ Server Key</div>
+
+<section id="loginCard" class="card">
+  <h1>Xác minh key</h1>
+  <p class="mute">Nhập key để mở bảng điều khiển aim.</p>
+  <input type="text" id="keyInput" placeholder="Nhập key" autocomplete="off" spellcheck="false">
+  <input type="text" id="hpInput" class="hp-field" tabindex="-1" autocomplete="off">
+  <button class="p" id="loginBtn" style="width:100%">Xác minh</button>
+  <p class="bad" id="loginMsg" role="status"></p>
+</section>
+
+<section id="mainPanel" hidden>
+  <div class="card">
+    <div class="top"><span class="tag" id="tierTag">FREE</span><button id="logoutBtn">Đổi key</button></div>
+    <div class="cd" id="cd">Vĩnh viễn</div>
+    <div class="mute" id="keyInfo"></div>
+  </div>
+  <div class="card stats" id="stats"><div><b>--</b>FPS</div><div><b>--</b>Ping</div><div><b>--</b>Loss</div></div>
+  <div class="card" id="featureBox"></div>
+  <div class="card"><b>Console</b><div class="log" id="log"></div></div>
+  <button id="go" class="p">▶ BẬT AIM</button>
+  <p class="mute" id="goStatus" style="text-align:center;margin-top:8px">Chờ lệnh...</p>
+</section>
+</div>
+<div id="toast" role="status"></div>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+// ============================================================
+//  BẢO VỆ CLIENT: Chặn click chuột phải, bôi đen, F12, Ctrl+U
+// ============================================================
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+  if(e.key === 'F12' || 
+    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || 
+    (e.ctrlKey && (e.key === 'U' || e.key === 'u'))) {
+    e.preventDefault();
+  }
+});
+
+const SOCKET_URL = null;
+const SERVER = "https://severkey.pages.dev/";
+let DID = load("did", null);
+if(!DID){
+  DID = "T" + Math.random().toString(36).slice(2,12).toUpperCase();
+  store("did", DID);
+}
+
+const RANK = {free:0, pro:1, vip:2};
+const LABEL = {free:"FREE", pro:"PRO", vip:"VIP"};
+const DEMO_KEYS = {"FREE-DEMO":"free","PRO-DEMO":"pro","VIP-DEMO":"vip"};
+// === Key cục bộ 1 giờ (gói VIP) — kiểm tra trước, không cần gọi server ===
+const H1_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+function h1Checksum(s){
+  let h = 0x2D83A5F1;
+  for(let i=0;i<s.length;i++){ h = ((h ^ (s.charCodeAt(i) << (i%4)*3)) * 16777619) >>> 0; }
+  let out = "";
+  for(let i=0;i<4;i++){ out += H1_CHARS[h % 32]; h = Math.floor(h / 32); }
+  return out;
+}
+function d1Checksum(s){
+  let h = 0x7A3F1C9B;
+  for(let i=0;i<s.length;i++){ h = ((h ^ (s.charCodeAt(i) << (i%4)*3)) * 16777619) >>> 0; }
+  let out = "";
+  for(let i=0;i<4;i++){ out += H1_CHARS[h % 32]; h = Math.floor(h / 32); }
+  return out;
+}
+function d7Checksum(s){
+  let h = 0xC4E2A817;
+  for(let i=0;i<s.length;i++){ h = ((h ^ (s.charCodeAt(i) << (i%4)*3)) * 16777619) >>> 0; }
+  let out = "";
+  for(let i=0;i<4;i++){ out += H1_CHARS[h % 32]; h = Math.floor(h / 32); }
+  return out;
+}
+function tryKeyScheme(norm, csFn, prefix, ms){
+  if(csFn(norm.slice(0,12)) !== norm.slice(12)) return null;
+  const storeKey = prefix + norm;
+  let activated = load(storeKey, 0);
+  const now = Date.now();
+  if(!activated){ activated = now; store(storeKey, now); }
+  const exp = activated + ms;
+  if(now > exp) return { reason:"expired" };
+  return { tier:"vip", exp:exp, devices:1, max:1 };
+}
+function localKeyCheck(key){
+  const norm = String(key).toUpperCase().replace(/-/g,"");
+  if(norm.length !== 16) return null;
+  for(const c of norm){ if(H1_CHARS.indexOf(c) < 0) return null; }
+  return tryKeyScheme(norm, h1Checksum, "h1_", 3600000)    // key 1 giờ
+      || tryKeyScheme(norm, d1Checksum, "d1_", 3600000)    // key cũ 1 ngày -> giờ còn 1 giờ
+      || tryKeyScheme(norm, d7Checksum, "d7_", 604800000); // key 7 ngày
+}
+
+// Đã đổi lại thành "Đầu"
+const FEATURES = [
+  { id:"nt",  name:"Nhẹ tâm",           min:"free", type:"toggle" },
+  { id:"al",  name:"Aim lock",          min:"free", type:"toggle" },
+  { id:"fl",  name:"Fix lố đầu",        min:"free", type:"toggle" },
+  { id:"ad",  name:"Aim drag",          min:"pro",  type:"toggle" },
+  { id:"alp", name:"Aim lock Pro",      min:"pro",  type:"toggle" },
+  { id:"ntp", name:"Nhẹ tâm Pro",       min:"pro",  type:"toggle" },
+  { id:"flp", name:"Fix lố đầu Pro",    min:"pro",  type:"toggle" },
+  { id:"at",  name:"Aim To",            min:"vip",  type:"select", options:["Đầu","Cổ","Ngực","Thân","Chân"] },
+  { id:"ds",  name:"Drag speed",        min:"vip",  type:"slider", minV:1, maxV:100, def:50 },
+  { id:"rc",  name:"Recoil",            min:"vip",  type:"slider", minV:0, maxV:100, def:30 },
+  { id:"fov", name:"Chỉnh FOV",         min:"vip",  type:"slider", minV:1, maxV:13, def:6, note:"1–13, chỉ chỉnh số, không vẽ FOV" }
+];
+
+const $ = id => document.getElementById(id);
+let state = { tier:null, key:null, info:null };
+let cfg = load("cfg", {});
+let run = false;
+let sock = null;
+
+function store(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function load(k,d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function log(msg, cls=''){ const el=$("log"); if(!el)return; el.innerHTML += `<span class="${cls}">[${new Date().toLocaleTimeString()}] ${esc(msg)}</span>`; el.scrollTop=el.scrollHeight; }
+function setMsg(el,t,cls){ el.textContent=t; el.className=cls||""; }
+
+function askServer(key){
+  return new Promise(resolve => {
+    let url;
+    try { url = new URL(SERVER); } catch(e) { return resolve({ status:"bad_url" }); }
+    url.searchParams.set("key", key);
+    url.searchParams.set("did", DID);
+    if(/^https?:$/.test(location.protocol)) url.searchParams.set("origin", location.origin);
+
+    const f = document.createElement("iframe");
+    f.style.cssText = "position:absolute;width:0;height:0;border:0;visibility:hidden";
+    f.setAttribute("aria-hidden","true");
+    const done = r => { clearTimeout(tm); removeEventListener("message", on); f.remove(); resolve(r); };
+    const on = e => {
+      if(e.source !== f.contentWindow) return;
+      const d = e.data;
+      if(d && d.type === "sk-key-result" && d.result) done(d.result);
+    };
+    const tm = setTimeout(() => done({ status:"timeout" }), 25000);
+    addEventListener("message", on);
+    f.src = url.href;
+    document.body.appendChild(f);
+    log("Gửi key tới Server...");
+  });
+}
+
+const KEY_RE = /^[\x21-\x7E]{4,128}$/;
+const REASON = {
+  not_found:"Key không tồn tại.", expired:"Key đã hết hạn.",
+  bad_tier:"Key cấp bậc không hợp lệ.", device_limit:"Key đã dùng hết số thiết bị.",
+  need_did:"Server yêu cầu mã thiết bị.", bad_request:"Key hoặc mã máy không hợp lệ.",
+  bad_record:"Dữ liệu key lỗi.", server_error:"Server đang bận, thử lại sau.",
+  timeout:"Không nhận phản hồi từ server.", bad_url:"Link server không hợp lệ."
+};
+let verifying = false, fails = 0, lockUntil = 0;
+
+async function doLogin(){
+  if(verifying) return;
+  const msg = $("loginMsg"), btn = $("loginBtn");
+  
+  const now = Date.now();
+  if(!window.lastReq) window.lastReq = now;
+  if(now - window.lastReq < 1000) { setMsg(msg, "Thao tác quá nhanh, vui lòng đợi.", "bad"); return; }
+  window.lastReq = now;
+
+  if($("hpInput").value !== "") return;
+
+  const wait = lockUntil - Date.now();
+  if(wait > 0){ setMsg(msg, `Đợi ${Math.ceil(wait/1000)}s.`, "bad"); return; }
+
+  const key = $("keyInput").value.normalize("NFKC").replace(/\s+/g,"");
+  if(!key){ setMsg(msg, "Hãy nhập key.", "bad"); return; }
+  if(!KEY_RE.test(key)){ setMsg(msg, "Key sai định dạng.", "bad"); return; }
+
+  verifying = true; btn.disabled = true; setMsg(msg, "Đang kiểm tra...", "mute");
+
+  try{
+    let res;
+    const local = localKeyCheck(key);
+    if(local){ res = local; }
+    else if(SERVER){
+      const r = await askServer(key);
+      log("Server trả: " + (r.status || (r.ok ? "OK" : "?")), r.ok ? "ok" : "bad");
+      if(r.ok){
+        const tier = String(r.tier || "").toLowerCase();
+        if(Object.hasOwn(RANK, tier)){
+          res = { tier, exp:r.exp || 0, devices:r.devices || 0, max:r.max || 1 };
+        } else res = { reason:"bad_tier" };
+      } else res = { reason:r.status };
+    } else {
+      const k = DEMO_KEYS[key.toUpperCase()];
+      res = k ? { tier:k } : { reason:"not_found" };
+    }
+
+    if(!res.tier){
+      if(["not_found","bad_request"].includes(res.reason)){
+        if(++fails >= 5){ fails = 0; lockUntil = Date.now() + 30000; }
+      }
+      setMsg(msg, REASON[res.reason] || "Key không hợp lệ.", "bad");
+      return;
+    }
+
+    fails = 0;
+    state.tier = res.tier; state.key = key; state.info = res;
+    store("key", key);
+    setMsg(msg, "Xác minh thành công.", "ok");
+    enterMain();
+  }catch(e){
+    setMsg(msg, "Không kiểm tra được key: " + e.message, "bad");
+  }finally{
+    verifying = false; btn.disabled = false;
+  }
+}
+
+function cdText(exp){
+  if(!exp || exp <= 0) return "Vĩnh viễn";
+  let s = Math.floor((exp - Date.now()) / 1000);
+  if(s <= 0) return "Đã hết hạn";
+  const d = Math.floor(s / 86400); s %= 86400;
+  const p = n => String(n).padStart(2,"0");
+  return (d ? d + " ngày " : "") + p(Math.floor(s/3600)) + ":" + p(Math.floor(s%3600/60)) + ":" + p(s%60);
+}
+
+function enterMain(){
+  $("loginCard").hidden = true;
+  $("mainPanel").hidden = false;
+  $("tierTag").textContent = LABEL[state.tier];
+  $("tierTag").className = "tag " + LABEL[state.tier];
+  $("cd").textContent = cdText(state.info.exp);
+  $("keyInfo").textContent = "Key " + state.key + (state.info.max ? ` · Máy ${state.info.devices}/${state.info.max}` : "");
+  renderFeatures();
+  log("Đăng nhập gói " + LABEL[state.tier], "ok");
+  connectSocket();
+}
+
+function canUse(f){ return RANK[state.tier] >= RANK[f.min]; }
+
+function renderFeatures(){
+  const box = $("featureBox");
+  box.innerHTML = "";
+  FEATURES.forEach(f => {
+    const ok = canUse(f);
+    const c = cfg[f.id] || {};
+    const div = document.createElement("div");
+    div.className = "fn" + (ok ? "" : " lock");
+    let controls = "";
+    if(f.type === "select"){
+      const cur = c.v || f.options[0];
+      controls = `<select data-s="${f.id}" ${ok?"":"disabled"}>${f.options.map(o=>`<option ${o===cur?"selected":""}>${o}</option>`).join("")}</select>`;
+    } else if(f.type === "slider"){
+      const cur = c.v ?? f.def;
+      controls = `<label class="note">${f.note||""}</label>
+        <div class="row">
+          <input type="range" min="${f.minV}" max="${f.maxV}" value="${cur}" data-r="${f.id}" ${ok?"":"disabled"}>
+          <span class="val" id="v_${f.id}">${cur}</span>
+        </div>`;
+    }
+    div.innerHTML = `
+      <div class="row">
+        <span class="name">${f.name} ${ok ? "" : `<span class="tag ${LABEL[f.min]}">🔒 ${LABEL[f.min]}</span>`}</span>
+        ${f.type === "toggle" ? `<input type="checkbox" class="sw" data-t="${f.id}" ${(c.on && ok) ? "checked" : ""} ${ok?"":"disabled"}>` : ""}
+      </div>
+      ${controls}
+      <span class="lockmsg">Cần gói ${LABEL[f.min]}</span>`;
+    box.appendChild(div);
+  });
+  box.querySelectorAll("[data-t]").forEach(el => {
+    el.addEventListener("change", () => {
+      const id = el.dataset.t;
+      cfg[id] = cfg[id] || {};
+      cfg[id].on = el.checked;
+      store("cfg", cfg);
+      log(`[${FEATURES.find(x=>x.id===id).name}] ${el.checked ? "ON" : "OFF"}`, el.checked ? "ok" : "bad");
+    });
+  });
+  box.querySelectorAll("[data-r]").forEach(el => {
+    el.addEventListener("input", () => {
+      const id = el.dataset.r;
+      cfg[id] = cfg[id] || {};
+      cfg[id].v = +el.value;
+      $("v_" + id).textContent = el.value;
+      store("cfg", cfg);
+    });
+  });
+  box.querySelectorAll("[data-s]").forEach(el => {
+    el.addEventListener("change", () => {
+      const id = el.dataset.s;
+      cfg[id] = cfg[id] || {};
+      cfg[id].v = el.value;
+      store("cfg", cfg);
+    });
+  });
+}
+
+function connectSocket(){
+  if(typeof io === "undefined"){ log("Không có socket.io — offline", "warn"); return; }
+  try{
+    sock = SOCKET_URL ? io(SOCKET_URL) : io();
+    sock.on("connect", () => log("Socket: đã kết nối", "ok"));
+    sock.on("disconnect", () => log("Socket: ngắt kết nối", "bad"));
+    sock.on("agent_status", d => {
+      log("Agent: " + (d.connected ? "online" : "offline"), d.connected ? "ok" : "bad");
+    });
+  }catch(e){
+    log("Socket lỗi: " + e.message, "bad");
+  }
+}
+
+// CHẶN NẾU CHỌN ĐẦU
+$("go").onclick = () => {
+  if (!run && cfg["at"] && cfg["at"].v === "Đầu") {
+    log("Chức năng Aim To (Đầu) đang bảo trì, vui lòng chọn bộ phận khác!", "warn");
+    alert("Chức năng Aim To (Đầu) đang bảo trì, cấm sử dụng. Vui lòng chọn Cổ, Ngực, Thân hoặc Chân.");
+    return; 
+  }
+
+  run = !run;
+  const go = $("go");
+  go.textContent = run ? "■ TẮT AIM" : "▶ BẬT AIM";
+  go.classList.toggle("on", run);
+  $("goStatus").textContent = run ? "Đang gửi lệnh..." : "Đã dừng";
+  
+  if(run){
+    log(">>> AIM ON", "ok");
+    FEATURES.filter(f => cfg[f.id]?.on && canUse(f)).forEach(f => log("Module: " + f.name, "warn"));
+    if(cfg["at"] && cfg["at"].v) log("Mục tiêu: " + cfg["at"].v, "ok");
+    if(sock) sock.emit("aim_command", { enabled:true, tier:state.tier, cfg:cfg, key:state.key, did:DID });
+  } else {
+    log(">>> AIM OFF", "bad");
+    if(sock) sock.emit("aim_command", { enabled:false, key:state.key, did:DID });
+  }
+};
+
+$("logoutBtn").onclick = () => {
+  store("key", null);
+  store("cfg", null);
+  state = { tier:null, key:null, info:null };
+  cfg = {};
+  run = false;
+  $("mainPanel").hidden = true;
+  $("loginCard").hidden = false;
+  $("keyInput").value = "";
+  $("loginMsg").textContent = "";
+  if(sock){ sock.emit("aim_command", { enabled:false }); sock.disconnect(); sock = null; }
+};
+
+setInterval(() => {
+  if($("mainPanel").hidden) return;
+  const s = $("stats");
+  s.innerHTML = `<div><b>${58+Math.floor(Math.random()*4)}</b>FPS</div><div><b>${20+Math.floor(Math.random()*25)}ms</b>Ping</div><div><b>${Math.random()<0.1?"0.1%":"0.0%"}</b>Loss</div>`;
+}, 1500);
+
+setInterval(() => {
+  if($("mainPanel").hidden) return;
+  const el = $("cd");
+  if(!el || !state.info) return;
+  el.textContent = cdText(state.info.exp);
+  if(state.info.exp && state.info.exp < Date.now()) {
+    store("key", null);
+    store("cfg", null);
+    cfg = {};
+    $("logoutBtn").click();
+    alert("Key đã hết hạn, cấu hình đã bị xoá để bảo mật.");
+  }
+}, 1000);
+
+$("loginBtn").onclick = doLogin;
+$("keyInput").addEventListener("keydown", e => { if(e.key === "Enter") doLogin(); });
+
+setInterval(() => {
+  fetch(location.href, { method: 'HEAD', cache: 'no-store' }).catch(()=>{});
+}, 120000);
+
+(async () => {
+  const saved = load("key", null);
+  if(!saved) return;
+  $("keyInput").value = saved;
+  await doLogin();
+})();
+</script>
+</body>
+</html>
